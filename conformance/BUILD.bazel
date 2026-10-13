@@ -1,0 +1,69 @@
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@com_google_protobuf//conformance:defs.bzl", "conformance_test")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//bazel:copts.bzl", "WOLAZ_COPTS")
+load("//bazel:wolaz_proto_library.bzl", "wolaz_proto_library")
+
+package(
+    default_testonly = True,
+    default_visibility = ["//visibility:public"],
+)
+
+exports_files(["failure_list_wolaz.txt"])
+
+# The payload messages, decoded by code from our plugin. This is what is under
+# test.
+#
+# The aspect generates for the whole transitive closure, so the well-known
+# types these import are covered without being listed.
+wolaz_proto_library(
+    name = "test_messages_proto3_wolaz_proto",
+    deps = ["@com_google_protobuf//conformance/test_protos:test_messages_proto3_proto"],
+)
+
+wolaz_proto_library(
+    name = "test_messages_proto2_wolaz_proto",
+    deps = ["@com_google_protobuf//conformance/test_protos:test_messages_proto2_proto"],
+)
+
+# The same payload messages with stock protobuf, which serialises the response
+# from the values wolaz decoded. wolaz only decodes.
+cc_proto_library(
+    name = "test_messages_proto3_cc_proto",
+    deps = ["@com_google_protobuf//conformance/test_protos:test_messages_proto3_proto"],
+)
+
+cc_proto_library(
+    name = "test_messages_proto2_cc_proto",
+    deps = ["@com_google_protobuf//conformance/test_protos:test_messages_proto2_proto"],
+)
+
+# The harness envelope, built with stock protobuf.
+cc_proto_library(
+    name = "conformance_cc_proto",
+    deps = ["@com_google_protobuf//conformance:conformance_proto"],
+)
+
+cc_binary(
+    name = "wolaz_conformer",
+    srcs = ["wolaz_conformer.cpp"],
+    copts = WOLAZ_COPTS,
+    deps = [
+        ":conformance_cc_proto",
+        ":test_messages_proto2_cc_proto",
+        ":test_messages_proto2_wolaz_proto",
+        ":test_messages_proto3_cc_proto",
+        ":test_messages_proto3_wolaz_proto",
+    ],
+)
+
+# Runs the real conformance suite against the testee.
+#
+# Tagged `conformance` and filtered out of `bazel test //...` by .bazelrc,
+# because it builds protoc and the conformance runner from source.
+conformance_test(
+    name = "conformance_test",
+    failure_list = ":failure_list_wolaz.txt",
+    maximum_edition = "2023",
+    testee = ":wolaz_conformer",
+)

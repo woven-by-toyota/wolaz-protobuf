@@ -1,0 +1,5 @@
+# Build rules for generating wolaz code from protos.
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["wolaz_proto_library.bzl"])

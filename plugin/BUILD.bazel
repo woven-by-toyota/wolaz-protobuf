@@ -1,0 +1,32 @@
+load("@com_google_protobuf//bazel/toolchains:proto_lang_toolchain.bzl", "proto_lang_toolchain")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("//bazel:copts.bzl", "WOLAZ_PLUGIN_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+# The protoc plugin. protoc discovers it as `protoc-gen-wolaz` on PATH, or via
+# --plugin=protoc-gen-wolaz=<path>; the toolchain below wires up the latter.
+cc_binary(
+    name = "protoc-gen-wolaz",
+    srcs = ["main.cpp"],
+    copts = WOLAZ_PLUGIN_COPTS,
+    deps = [
+        "@abseil-cpp//absl/strings",
+        "@com_google_protobuf//:protoc_lib",
+    ],
+)
+
+# Tells proto_common.compile() how to invoke the plugin. `runtime` is the
+# library generated code needs, so dependents of wolaz_proto_library get it
+# without naming it.
+proto_lang_toolchain(
+    name = "wolaz_toolchain",
+    command_line = "--wolaz_out=$(OUT)",
+    mnemonic = "GenWolazProto",
+    output_files = "multiple",
+    plugin = ":protoc-gen-wolaz",
+    plugin_format_flag = "--plugin=protoc-gen-wolaz=%s",
+    progress_message = "Generating wolaz protos %{label}",
+    runtime = "//runtime:wolaz",
+    toolchain_type = "@com_google_protobuf//bazel/private:proto_toolchain_type",
+)

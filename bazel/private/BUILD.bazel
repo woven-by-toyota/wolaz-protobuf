@@ -1,0 +1,3 @@
+# Implementation details of //bazel:wolaz_proto_library.bzl. Not public API.
+
+package(default_visibility = ["//bazel:__subpackages__"])

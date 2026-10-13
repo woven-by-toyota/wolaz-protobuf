@@ -1,0 +1,59 @@
+# C++17 for everything, because protobuf and abseil require it. The wolaz
+# runtime and the C++14 test override this to C++14 per target; see
+# WOLAZ_CPP14_COPTS in bazel/copts.bzl.
+build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
+
+# Warnings are set per-target in bazel/copts.bzl, not here, so that they apply
+# to wolaz's own code and not to protobuf's or abseil's.
+
+# The compile_commands.json extractor cannot interpret the standalone
+# header-syntax-check actions that the parse_headers feature generates
+# (-xc++-header -fsyntax-only, with no source file at all), so turn it off.
+# This drops an extra validation action; it changes nothing about what is
+# actually compiled or linked.
+build --features=-parse_headers
+build --host_features=-parse_headers
+
+# The conformance test builds protoc and the whole conformance runner from
+# source, so it is by far the slowest target. It still runs under
+# `bazel test //...`, which is the useful default; skip it with:
+#
+#   bazel test --config=noconformance //...
+test:noconformance --test_tag_filters=-conformance
+
+# Sanitizer configurations, modelled on protobuf's own .bazelrc.
+build:dbg --compilation_mode=dbg
+build:opt --compilation_mode=opt
+
+build:san-common --config=dbg --strip=never --copt=-O0 --copt=-fno-omit-frame-pointer
+
+build:asan --config=san-common --copt=-fsanitize=address --linkopt=-fsanitize=address
+# ASAN hits ODR violations with shared linkage via rules_proto.
+build:asan --dynamic_mode=off
+
+# UndefinedBehaviorSanitizer, applied to wolaz's own sources only (runtime/,
+# conformance/ and test/). Under GCC, -fsanitize=undefined makes a
+# function-pointer comparison inside abseil's hash containers non-constant, so
+# protobuf and abseil fail to compile with it. The runtime library is still
+# linked into everything, so it is checked.
+build:ubsan --config=san-common --linkopt=-fsanitize=undefined
+build:ubsan --per_file_copt=^runtime/,^conformance/,^test/@-fsanitize=undefined
+build:ubsan --per_file_copt=^runtime/,^conformance/,^test/@-fno-sanitize-recover=undefined
+
+build:tsan --config=san-common --copt=-fsanitize=thread --linkopt=-fsanitize=thread
+# On kernels with high mmap ASLR entropy (vm.mmap_rnd_bits > 28, the default
+# on recent Ubuntu kernels) TSan aborts at startup with "unexpected memory
+# mapping". Running the test with ASLR disabled avoids that without needing
+# root to change the sysctl. Child processes inherit the setting, so this also
+# covers the conformance testee.
+test:tsan --run_under="setarch -R"
+
+# There is no msan config: MemorySanitizer is Clang-only, and the host
+# toolchain is GCC.
+
+# Print the full command line and test output when something fails.
+test --test_output=errors
+build --verbose_failures
+
+# Local user overrides, if any.
+try-import %workspace%/user.bazelrc

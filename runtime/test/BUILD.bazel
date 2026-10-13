@@ -1,0 +1,17 @@
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:copts.bzl", "WOLAZ_COPTS")
+
+package(default_visibility = ["//visibility:private"])
+
+# The wire-format layer on its own, independent of the code generator, so that
+# a conformance failure can be localised. Stock protobuf is only used to
+# produce encoded input.
+cc_test(
+    name = "runtime_test",
+    srcs = ["runtime_test.cpp"],
+    copts = WOLAZ_COPTS,
+    deps = [
+        "//runtime:wolaz",
+        "@com_google_protobuf//:protobuf",
+    ],
+)

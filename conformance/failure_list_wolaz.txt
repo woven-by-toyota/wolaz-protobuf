@@ -1,0 +1,57 @@
+# Conformance tests known to fail for wolaz_conformer.
+#
+# Pass to the harness with:
+#   conformance_test_runner --enforce_recommended \
+#       --failure_list conformance/failure_list_wolaz.txt wolaz_conformer
+#
+# JSON and text-format tests are not listed: the testee answers them with
+# `skipped`, because wolaz is a binary wire-format decoder and has no JSON or
+# text parser.
+#
+# How the testee works: wolaz decodes the payload, every decoded value is
+# copied into the matching stock protobuf message, and stock protobuf
+# serialises that message as the response. So a test passes exactly when wolaz
+# decodes every value the reference implementation would.
+#
+# Every failure below has the same root cause: wolaz does not preserve unknown
+# fields.
+#
+# A field number the message does not declare is skipped during decoding. It
+# is not stored anywhere and cannot be inspected afterwards. Storing a
+# variable number of unknown fields would mean allocating, and zero-heap
+# decoding is the point of the library. Stock protobuf instead keeps unknown
+# fields in an UnknownFieldSet and writes them back out when it serialises, and
+# these tests check for that.
+
+# Unknown fields
+#
+# The payload is a field number that TestAllTypesProto2/3 does not declare;
+# the expected output carries it through unchanged. wolaz skips it, so the
+# response has no unknown fields at all.
+Required.Proto2.ProtobufInput.UnknownVarint.ProtobufOutput
+Required.Proto3.ProtobufInput.UnknownVarint.ProtobufOutput
+
+# Several unknown fields, interleaved with known ones; the expected output
+# keeps the unknown fields in their original order. wolaz has none to order.
+Required.Proto2.ProtobufInput.UnknownOrdering.ProtobufOutput
+Required.Proto3.ProtobufInput.UnknownOrdering.ProtobufOutput
+
+# Extensions inside a MessageSet
+#
+# TestAllTypesProto2.message_set_correct is a MessageSetCorrect, which declares
+# no fields of its own, only an extension range. Its whole content is
+# extensions. wolaz generates no code for extensions, so to the decoder they
+# are unknown fields of an empty message and are skipped. The response
+# carries an empty message_set_correct, where the expected output has the
+# extension in it.
+#
+# Extensions declared on TestAllTypesProto2 itself (field numbers 120-200) are
+# skipped the same way. No conformance test sends one, so none fails.
+Required.Proto2.ProtobufInput.ValidMessageSetEncoding.ProtobufOutput
+Required.Proto2.ProtobufInput.ValidMessageSetEncoding.OutOfOrderGroupsEntries.ProtobufOutput
+Recommended.Proto2.ProtobufInput.ValidMessageSetEncoding.SubmessageEncoding.ProtobufOutput
+Recommended.Proto2.ProtobufInput.ValidMessageSetEncoding.SubmessageEncoding.NotUnknown.ProtobufOutput
+
+# An extension number MessageSetCorrect does not declare at all. Stock
+# protobuf keeps it as an unknown field; wolaz skips it.
+Required.Proto2.ProtobufInput.MessageSetEncoding.UnknownExtension.ProtobufOutput

@@ -1,0 +1,18 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:copts.bzl", "WOLAZ_CPP14_COPTS")
+
+package(default_visibility = ["//visibility:public"])
+
+# The library users include, and the only thing generated code depends on.
+#
+# wolaz.hpp carries the templates; src/wolaz.cpp carries the non-template
+# wire-format helpers so they are compiled once rather than in every
+# translation unit that includes a generated header.
+cc_library(
+    name = "wolaz",
+    srcs = ["src/wolaz.cpp"],
+    hdrs = ["include/wolaz.hpp"],
+    copts = WOLAZ_CPP14_COPTS,
+    includes = ["include"],
+    strip_include_prefix = "include",
+)

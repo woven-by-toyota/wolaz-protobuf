@@ -1,0 +1,29 @@
+module(
+    name = "wolaz_protobuf",
+    version = "0.1.0",
+    bazel_compatibility = [">=8.0.0"],
+    compatibility_level = 1,
+)
+
+# protoc, libprotobuf and the conformance test runner. The repo_name matches
+# protobuf's own convention so that labels read the same way they do upstream.
+bazel_dep(name = "protobuf", version = "36.2", repo_name = "com_google_protobuf")
+
+# Must agree with protobuf's own abseil: the plugin links libprotoc, which
+# exposes absl types across the ABI boundary.
+bazel_dep(name = "abseil-cpp", version = "20250814.1")
+
+bazel_dep(name = "rules_cc", version = "0.2.18")
+bazel_dep(name = "rules_shell", version = "0.6.1")
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+
+# compile_commands.json for clangd and friends. Not in the Bazel Central
+# Registry, so it is pinned by commit.
+#
+#   bazel run //:refresh_compile_commands
+bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+git_override(
+    module_name = "hedron_compile_commands",
+    commit = "abb61a688167623088f8768cc9264798df6a9d10",
+    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
+)

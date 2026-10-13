@@ -1,0 +1,8 @@
+# Bazel
+/bazel-*
+/user.bazelrc
+/MODULE.bazel.lock
+
+# Compilation database, written by `bazel run //:refresh_compile_commands`
+/compile_commands.json
+/.cache/

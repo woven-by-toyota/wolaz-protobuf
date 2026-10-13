@@ -1,0 +1,53 @@
+// The example message from the README, plus enough extra shapes to exercise
+// the generated decode API directly: presence, nested and recursive messages,
+// enums, packed fields, maps, oneofs and unknown fields.
+
+syntax = "proto3";
+
+package wolaz.example;
+
+enum Colour {
+  COLOUR_UNKNOWN = 0;
+  COLOUR_RED = 1;
+  COLOUR_GREEN = 2;
+}
+
+// The README's worked example.
+message MSample {
+  double OneDouble = 1;
+  int64 TwoInt = 2;
+  string ThreeString = 3;
+  repeated string FourStrings = 4;
+}
+
+message Inner {
+  int32 value = 1;
+  repeated int32 numbers = 2;
+}
+
+message Coverage {
+  // explicit presence, so a zero value still goes on the wire
+  optional int32 explicit_zero = 1;
+  // implicit presence, so a zero value must not
+  int32 implicit_zero = 2;
+
+  Inner nested = 3;
+  repeated Inner nested_list = 4;
+
+  Colour colour = 5;
+  repeated Colour colours = 6;
+
+  bytes raw = 7;
+  repeated int64 packed_longs = 8;
+
+  map<string, int32> counts = 9;
+
+  oneof choice {
+    int32 choice_int = 10;
+    string choice_string = 11;
+    Inner choice_message = 12;
+  }
+
+  // a recursive reference, which is what forces the lazy representation
+  Coverage self = 13;
+}

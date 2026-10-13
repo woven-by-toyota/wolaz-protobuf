@@ -1,0 +1,21 @@
+load("@hedron_compile_commands//:refresh_compile_commands.bzl", "refresh_compile_commands")
+
+# Writes compile_commands.json at the workspace root for clangd and any other
+# tool that consumes a compilation database.
+#
+#   bazel run //:refresh_compile_commands
+#
+# Targets are listed explicitly rather than using //... so that refreshing does
+# not drag in the whole conformance runner build.
+refresh_compile_commands(
+    name = "refresh_compile_commands",
+    targets = {
+        "//runtime:wolaz": "",
+        "//runtime/test:runtime_test": "",
+        "//test:example_test": "",
+        "//test:cpp14_test": "",
+        "//test:road_testwork_test": "",
+        "//plugin:protoc-gen-wolaz": "",
+        "//conformance:wolaz_conformer": "",
+    },
+)

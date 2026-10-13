@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+message RoadLane {
+    repeated uint64 lanes_ahead = 1;
+}
+
+message RoadStop {
+    string name = 1;
+}
+
+message RoadElement {
+    uint64 id = 1;
+
+    oneof element {
+        RoadLane lane = 2;
+        RoadStop stop = 3;
+    }
+}
+
+message RoadSection {
+    string name = 1;
+
+    repeated RoadElement elements = 2;
+}

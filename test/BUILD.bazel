@@ -1,0 +1,87 @@
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:copts.bzl", "WOLAZ_COPTS", "WOLAZ_CPP14_COPTS")
+load("//bazel:wolaz_proto_library.bzl", "wolaz_proto_library")
+
+package(default_visibility = ["//visibility:private"])
+
+# ---------------------------------------------------------------------------
+# Generated-code test
+#
+# Checks the generated decode API against stock protobuf: messages are
+# serialized by the reference implementation and decoded by wolaz. wolaz emits
+# into a nested `decode` namespace, so both generators' headers for the same
+# .proto can be included together.
+# ---------------------------------------------------------------------------
+
+proto_library(
+    name = "example_proto",
+    srcs = ["example.proto"],
+)
+
+wolaz_proto_library(
+    name = "example_wolaz_proto",
+    deps = [":example_proto"],
+)
+
+cc_proto_library(
+    name = "example_cc_proto",
+    deps = [":example_proto"],
+)
+
+cc_test(
+    name = "example_test",
+    srcs = ["example_test.cpp"],
+    copts = WOLAZ_COPTS,
+    deps = [
+        ":example_cc_proto",
+        ":example_wolaz_proto",
+    ],
+)
+
+# ---------------------------------------------------------------------------
+# road_testwork.proto: encode with stock protobuf, decode with wolaz and with
+# stock protobuf.
+#
+# ---------------------------------------------------------------------------
+
+proto_library(
+    name = "road_testwork_proto",
+    srcs = ["road_testwork.proto"],
+)
+
+wolaz_proto_library(
+    name = "road_testwork_wolaz_proto",
+    deps = [":road_testwork_proto"],
+)
+
+cc_proto_library(
+    name = "road_testwork_cc_proto",
+    deps = [":road_testwork_proto"],
+)
+
+cc_test(
+    name = "road_testwork_test",
+    srcs = ["road_testwork_test.cpp"],
+    copts = WOLAZ_COPTS,
+    deps = [
+        ":road_testwork_cc_proto",
+        ":road_testwork_wolaz_proto",
+    ],
+)
+
+# The runtime and generated code, compiled as C++14 with -pedantic-errors.
+# The other tests include stock protobuf, which needs C++17, so this is the
+# test that keeps wolaz itself within C++14. Its input is written by hand.
+cc_test(
+    name = "cpp14_test",
+    srcs = ["cpp14_test.cpp"],
+    copts = WOLAZ_CPP14_COPTS,
+    deps = [
+        ":example_wolaz_proto",
+        ":road_testwork_wolaz_proto",
+        "//conformance:test_messages_proto2_wolaz_proto",
+        "//conformance:test_messages_proto3_wolaz_proto",
+    ],
+)
